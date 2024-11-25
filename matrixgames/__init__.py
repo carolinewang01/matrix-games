@@ -315,16 +315,16 @@ def define_bit_game_payoff(n_agents):
         indice = [0 for _ in range(n_agents)]
         indice[i] = 1
         payoff[tuple(indice)] = 1
-    return payoff*n_agents 
+    return np.array([payoff for _ in range(n_agents)])
 
 for n_agents in range(3, 10):
     _payoff_bit_game = define_bit_game_payoff(n_agents=n_agents)
     register(
-        f"bit-{n_agents}p-nostate-v0",
+        f"bit-{n_agents}p-jointactionstate-v0",
         entry_point="matrixgames.games:MatrixGame",
         kwargs={
             "payoff_matrix": _payoff_bit_game,
             "ep_length": 1000,
-            "last_action_state": False,
+            "last_action_state": True,
         },
     )

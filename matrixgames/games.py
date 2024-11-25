@@ -17,7 +17,8 @@ def actions_to_onehot(num_actions, actions):
 
 
 class MatrixGame(gym.Env):
-    def __init__(self, payoff_matrix, ep_length, last_action_state=True):
+    def __init__(self, payoff_matrix, ep_length, 
+                 last_action_state=True, action_onehot_repr=False):
         """
         Create matrix game
         :param payoff_matrix: list of lists or numpy array for payoff matrix of all agents
@@ -27,6 +28,7 @@ class MatrixGame(gym.Env):
         """
         self.payoff = payoff_matrix
         self.n_agents = self.payoff.shape[0]
+        self.action_onehot_repr = action_onehot_repr
         self.num_actions = [self.payoff.shape[i + 1] for i in range(self.n_agents)]
 
         self.ep_length = ep_length
@@ -39,10 +41,21 @@ class MatrixGame(gym.Env):
             [gym.spaces.Discrete(num_action) for num_action in self.num_actions]
         )
 
-        shape = (self.n_agents,)
+        # per agent obs space
+        if self.last_action_state:
+            # assumes all agents have same action space
+            if self.action_onehot_repr:
+                shape = (self.n_agents, self.num_actions[0])
+            else: # actions represented as integer
+                shape = (self.n_agents, )
+        else: 
+            shape = (self.n_agents,)
+
         low = np.zeros(shape)
         high = np.ones(shape)
         obs_space = gym.spaces.Box(shape=shape, low=low, high=high)
+        
+        # joint obs space
         self.observation_space = gym.spaces.Tuple(
             [obs_space for _ in range(self.n_agents)]
         )
@@ -61,7 +74,10 @@ class MatrixGame(gym.Env):
 
     def step(self, action):
         self.t += 1
-        self.last_actions = actions_to_onehot(self.num_actions, action)
+        if self.action_onehot_repr:
+            self.last_actions = actions_to_onehot(self.num_actions, action)
+        else:
+            self.last_actions = action
         reward = self.payoff
 
         rewards = [0 for _ in range(len(action))]
